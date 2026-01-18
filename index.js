@@ -42,6 +42,20 @@ app.use(express.json());
 
 let transport;
 
+// 添加根路徑處理 - 返回伺服器資訊
+app.get("/", (req, res) => {
+  res.json({
+    name: "CNC-Automation-Planner MCP Server",
+    version: "1.0.0",
+    status: "running",
+    endpoints: {
+      sse: "/sse",
+      messages: "/messages"
+    }
+  });
+});
+
+// SSE 連線端點
 app.get("/sse", async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -52,6 +66,7 @@ app.get("/sse", async (req, res) => {
   console.log("n8n SSE 通道已建立");
 });
 
+// 訊息處理端點
 app.post("/messages", async (req, res) => {
   if (transport) {
     await transport.handlePostMessage(req, res);
