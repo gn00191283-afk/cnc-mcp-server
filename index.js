@@ -57,21 +57,38 @@ app.get("/", (req, res) => {
 
 // SSE 連線端點
 app.get("/sse", async (req, res) => {
+  console.log("收到 SSE 連線請求");
+  
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('X-Accel-Buffering', 'no');
   
-  transport = new SSEServerTransport("/messages", res);
-  await server.connect(transport);
-  console.log("n8n SSE 通道已建立");
+  try {
+    transport = new SSEServerTransport("/messages", res);
+    await server.connect(transport);
+    console.log("SSE 通道已成功建立");
+  } catch (error) {
+    console.error("SSE 連線錯誤:", error);
+    res.status(500).end();
+  }
 });
 
 // 訊息處理端點
 app.post("/messages", async (req, res) => {
+  console.log("收到 POST 訊息請求");
+  
   if (transport) {
-    await transport.handlePostMessage(req, res);
+    try {
+      await transport.handlePostMessage(req, res);
+    } catch (error) {
+      console.error("訊息處理錯誤:", error);
+      res.status(500).json({ error: error.message });
+    }
   } else {
-    res.status(400).send("無效連線");
+    console.error("Transport 未初始化");
+    res.status(400).json({ error: "無效連線 - Transport 未初始化" });
   }
 });
 
